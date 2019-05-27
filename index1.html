@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <style>
+            #mapimg{position:absolute; float:left;left:0px; top:0px; z-index: -1;}
+            svg{position:absolute; left:0px; top:0px;}
+            #controlplane{position:absolute; left:1095px; top:0px; float:left; padding-top: 30px; font-size:15px;}
+            #liTrack{position:absolute; left:1095px; top:300px; float:left; padding-top: 30px; font-size:15px;}
+        </style>
+
+        <script src = "./lib/d3.js"></script>
+        <script src = "./lib/jquery.js"></script>
+    </head>
+    <body>
+        <div id = 'mapimg' width = "995" height = '823'>
+            <img src="./StHimarkMapBlank.png" ></img>
+        </div>
+        <svg id = "trajectory" width = '995' height='823'>
+        
+        <div id = "controlplane" width= "800" height='200'>
+            sensor id to add <input type = "text" name="addmobileid"></input>
+            <button type="button" onclick = "addTrack()">Add</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            sensor id to delete <input type = "text" name="delmobileid"></input>
+            <button type="button" onclick = "delTrack()">Delete</button>
+            <br>
+            <button type="button" onclick = "drawStaticMobile()">Add all static track</button>
+            <button type="button" onclick = "clearall()">Clear all track</button>
+        </div>
+
+        <div id = "liTrack" width= "800" height='200'>
+            
+        </div>
+
+        <script>
+            var staticid = []
+            var svg = d3.select("#trajectory")
+
+            var lineFunction = d3.line()
+                    .x(function(d){ return d['lonplat'].x;})
+                    .y(function(d){ return d['lonplat'].y;})
+
+            var lon2x = d3.scaleLinear()
+                    .domain([-120,-119.711751])
+                    .range([0,995])
+
+            var lat2y = d3.scaleLinear()
+                    .domain([0, 0.238585])
+                    .range([823,0])
+
+            var colorscale = d3.scaleLinear()
+                        .domain([1,50])
+                        .range(["#C5151C", "#11A6E6"])
+                        .interpolate(d3.interpolateHcl)
+
+            var radiusscale = d3.scaleLinear()
+                        .domain([0, 200])
+                        .range([0,40])
+
+            var month = 4
+            var day = 6
+            var hour = 0
+            var minute = 0
+            var second = 0
+
+            var count = 0
+
+            var numset = []
+            var nameset = []
+
+            var addmobile_id = ""
+            var delmobile_id = ""
+
+            function light(sensorid){
+                
+                sensorid = parseInt(sensorid)
+                d3.select("body")
+                    .select(".mobilePath" + String(sensorid))
+                    .select("path")
+                        .style("stroke", function(){
+                            return "#1FB34B"
+                        })
+
+                d3.select("body")
+                    .select(".mobileMark" + String(sensorid))
+                        .selectAll("text")
+                        .style("fill", function(){
+                            return "#1FB34B"
+                        })
+            }
+
+            function recover(sensorid){
+                sensorid = parseInt(sensorid)
+                d3.select("body")
+                    .select(".mobilePath" + String(sensorid))
+                    .select("path")
+                        .style("stroke", function(){
+                            return colorscale(parseInt(sensorid))
+                        })
+
+                d3.select("body")
+                    .select(".mobileMark" + String(sensorid))
+                        .selectAll("text")
+                        .style("fill", function(){
+                            return "#F27219"
+                        })
+            }
+
+            function addTrack(){
+                addmobile_id = $('input[name="addmobileid"]').val()
+                drawTrack(addmobile_id)
+                console.log('add', addmobile_id)
+                var colornow = colorscale(parseInt(addmobile_id))
+                var lightcolor = "#EDE327"
+                var button = document.createElement("input")
+                button.id = "Track"+String(addmobile_id)
+                button.type = "button"
+                button.value = addmobile_id
+                button.style = 'width:70px;background-color:' + colornow
+                button.setAttribute("onmouseover", 'light('+addmobile_id+')')
+                button.setAttribute("onmouseout", 'recover('+addmobile_id+')')
+                var mm = document.getElementById("liTrack")
+                mm.appendChild(button)
+                // mm.innerHTML = "<input type = 'button' value = '" + addmobile_id + "' style = 'width:70px;background-color:" + colornow + ";'>"
+                // console.log("type", typeof(addmobile_id))
+            }
+
+            function delTrack(){
+                delmobile_id = $('input[name="delmobileid"]').val()
+                deleteTrack(delmobile_id)
+                var button = document.getElementById("Track"+String(delmobile_id))
+                var nn = document.getElementById("liTrack")
+                nn.removeChild(button)
+                console.log("del", delmobile_id)
+            }
+
+            function clearall(){
+                d3.select("svg").selectAll("g").remove()
+            }
+
+            function deleteTrack(sensorid){
+                // console.log("ddd", "#"+sensorid)
+                d3.select("body")
+                        .select(".mobilePath"+ String(sensorid)).remove()
+
+
+            }
+
+            function transfer(number){
+                if (number < 10){
+                    return "0" + String(number)
+                }
+                else{
+                    return String(number)
+                }
+            }
+
+            function drawTrack(sensorid){
+                d3.csv('./csvdata/mobile/mobileid' + String(sensorid) + '.csv', function(error, data){
+                    if(error){
+                        console.log(error)
+                    }
+                    else{
+                        
+                        var mobileData = []
+                        var valueset = []
+                        var timeset = []
+
+                        for(var i = 0; i < data.length; i++){
+                            var value = parseFloat(data[i].Value)
+                            var timestamp = data[i].Timestamp
+                            var datadict = {}
+                            var lonplat = {}
+                            lonplat['x'] = parseFloat(lon2x(data[i].Long))
+                            lonplat['y'] = parseFloat(lat2y(data[i].Lat))
+                            datadict['Value'] = value
+                            datadict['Timestamp'] = timestamp
+                            datadict['lonplat'] = lonplat
+                            mobileData.push(datadict)
+                            // numset.push(lonplat)
+                            // valueset.push(value)
+                            // timeset.push(timestamp)
+                            // nameset.push()
+                        }
+                        console.log("ddd", mobileData)
+
+                        var g = svg.append("g")
+                                .attr("class", "mobilePath"+String(sensorid))
+
+                        var linepath = g.append("path")
+                                // .attr("data", function(){
+                            
+                                //     return JSON.stringify(numset)
+                                // })
+                                .attr("d", lineFunction(mobileData))
+                                .attr("valueset", valueset)
+                                .attr("timeset", timeset)
+                                // .attr("stroke", "#C5151C")
+                                .style('stroke', function(){
+                                    console.log('color',colorscale(parseInt(sensorid)))
+                                    return colorscale(parseInt(sensorid))
+                                })
+                                .attr("stroke-width", 1.8)
+                                .style("fill", "none")
+
+                        var mark = g.append('g')
+                            .attr("class", "mobileMark"+String(sensorid))
+
+                        var circle = mark.append("circle")
+                            .attr("r", mobileData[0]['Value'])
+                            .attr("transform", "translate(" + mobileData[0]['lonplat']['x'] + ',' + mobileData[0]['lonplat']['y'] + ")")
+                            .style("fill", "#F27219")
+
+                        var timetext = mark.append('text')
+                            .attr("class", "timetext")
+                            .attr('x', mobileData[0]['lonplat']['x'] - 5)
+                            .attr('y', mobileData[0]['lonplat']['y'] - 17)
+                            .style('fill', '#F27219')
+                            .style('font-size', '12px')
+                            .style('font-weight', 'bold')
+                            .text(mobileData[0]['Timestamp']);
+                        var valuetext = mark.append('text')
+                            .attr("class", "valuetext")
+                            .attr('x', mobileData[0]['lonplat']['x'] - 5)
+                            .attr('y', mobileData[0]['lonplat']['y'] - 37)
+                            .style("display", "none")
+                            .style('fill', '#F27219')
+                            .style('font-size', '12px')
+                            .style('font-weight', 'bold')
+                            .text(mobileData[0]['Value']);
+
+                        var flag = 0
+                        var interval = setInterval(function(sensorid){
+
+                            if(count == 0){
+                                flag = 1
+                                count ++
+                            }
+                            if(flag == 1){
+                                second += 5
+                                if(second == 60){
+                                    minute += 1
+                                    second = 0
+                                }
+                                if(minute == 60){
+                                    hour += 1
+                                    minute = 0
+                                }
+                                if(hour == 24){
+                                    day += 1
+                                    hour = 0
+                                }
+                                
+                                var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
+                            }
+                            else if(flag == 0){
+                                var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
+                            }
+                            transition(timeNow)
+                            if(day == 11 && hour == 0 && minute == 0 && second == 0){
+                                clearInterval(interval)
+                            }
+                        }, 0.001)
+
+                        function transition(timestamp) {
+                            d3.select("body")
+                                .select(".mobileMark"+ String(sensorid))
+                                .attr("start", function(){
+                                    var that = d3.select(this) 
+                                    for (var i = 0; i < mobileData.length; i++){
+                                        if(timestamp == mobileData[i]['Timestamp']){
+                                            var markcircle = d3.select(this).select("circle")
+                                                .attr("r", radiusscale(mobileData[i]['Value']))
+                                                .attr("transform", function(){
+                                                    x = mobileData[i]['lonplat']['x']
+                                                    y = mobileData[i]['lonplat']['y']
+                                                    return "translate(" + x + ',' + y + ")"
+                                                })
+                                            var timetext = d3.select(this).select(".timetext")
+                                                .attr("x",  function(){ 
+                                                    return mobileData[i]['lonplat']['x'] - 5
+                                                })
+                                                .attr("y",  function(){return mobileData[i]['lonplat']['y'] - 17})
+                                                .text(timestamp)
+                                            var valuetext = d3.select(this).select(".valuetext")
+                                                .style("display", "none")
+                                                .attr("x",  function(){ 
+                                                    return mobileData[i]['lonplat']['x'] - 5
+                                                })
+                                                .attr("y",  function(){return mobileData[i]['lonplat']['y'] - 37})
+                                                .text(mobileData[i]['Value'])
+                                            break;
+                                        }
+                                        if (i == mobileData.length-1){
+                                            var markcircle = d3.select(this).select("circle")
+                                                .attr("r", 0)
+                                            var valuetext = d3.select(this).select(".valuetext")
+                                                .style("display", "block")
+                                                .text("NaN")
+                                        }
+                                    }
+                                    
+                                    return 0
+                                })
+                        }
+
+                    }
+                })
+            }
+
+            function drawStatic(sensorid){
+                d3.csv('./csvdata/static/staticid' + String(sensorid) + '.csv', function(error, data){
+                    if(error){
+                        console.log(error)
+                    }
+                    else{
+                        
+                        var staticData = []
+                        var valueset = []
+                        var timeset = []
+
+                        for(var i = 0; i < data.length; i++){
+                            var value = parseFloat(data[i].Value)
+                            var timestamp = data[i].Timestamp
+                            var datadict = {}
+                            var lonplat = {}
+                            lonplat['x'] = parseFloat(lon2x(data[i].Long))
+                            lonplat['y'] = parseFloat(lat2y(data[i].Lat))
+                            datadict['Value'] = value
+                            datadict['Timestamp'] = timestamp
+                            datadict['lonplat'] = lonplat
+                            staticData.push(datadict)
+                        }
+
+                        var g = svg.append("g")
+                                .attr("class", "staticPath"+String(sensorid))
+
+                        var mark = g.append('g')
+                            .attr("class", "staticMark"+String(sensorid))
+
+                        var circle = mark.append("circle")
+                            .attr("r", staticData[0]['Value'])
+                            .attr("transform", "translate(" + staticData[0]['lonplat']['x'] + ',' + staticData[0]['lonplat']['y'] + ")")
+                            .style("fill", "#F27219")
+
+                        var idtext = mark.append('text')
+                            .attr("class", "idtext")
+                            .attr('x', staticData[0]['lonplat']['x'] + 5)
+                            .attr('y', staticData[0]['lonplat']['y'] + 10)
+                            .style('fill', '#F27219')
+                            // .style('font-size', '24px')
+                            .style('font-weight', 'bold')
+                            .text(String(sensorid));
+
+
+                        var timetext = mark.append('text')
+                            .attr("class", "timetext")
+                            .attr('x', staticData[0]['lonplat']['x'] - 5)
+                            .attr('y', staticData[0]['lonplat']['y'] - 17)
+                            .style('fill', '#F27219')
+                            .style('font-size', '12px')
+                            .style('font-weight', 'bold')
+                            .text(staticData[0]['Timestamp']);
+                        var valuetext = mark.append('text')
+                            .attr("class", "valuetext")
+                            .style("display", "none")
+                            .attr('x', staticData[0]['lonplat']['x'] - 5)
+                            .attr('y', staticData[0]['lonplat']['y'] - 37)
+                            .style('fill', '#F27219')
+                            .style('font-size', '12px')
+                            .style('font-weight', 'bold')
+                            .text(staticData[0]['Value']);
+
+                        var flag = 0
+                        var interval = setInterval(function(sensorid){
+
+                            if(count == 0){
+                                flag = 1
+                                count ++
+                            }
+                            if(flag == 1){
+                                second += 5
+                                if(second == 60){
+                                    minute += 1
+                                    second = 0
+                                }
+                                if(minute == 60){
+                                    hour += 1
+                                    minute = 0
+                                }
+                                if(hour == 24){
+                                    day += 1
+                                    hour = 0
+                                }
+                                
+                                var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
+                            }
+                            else if(flag == 0){
+                                var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
+                            }
+                            staticTransition(timeNow)
+                            if(day == 11 && hour == 0 && minute == 0 && second == 0){
+                                clearInterval(interval)
+                            }
+                        }, 0.001)
+
+                        function staticTransition(timestamp) {
+                            d3.select("body")
+                                .select(".staticMark"+ String(sensorid))
+                                .attr("start", function(){
+                                    var that = d3.select(this) 
+                                    for (var i = 0; i < staticData.length; i++){
+                                        if(timestamp == staticData[i]['Timestamp']){
+                                            var markcircle = d3.select(this).select("circle")
+                                                .attr("r", radiusscale(staticData[i]['Value']))
+
+                                            var timetext = d3.select(this).select(".timetext")
+                                                .text(timestamp)
+                                            var valuetext = d3.select(this).select(".valuetext")
+                                                .style("display", "none")
+                                                .text(staticData[i]['Value'])
+                                            break
+                                        }        
+                                        if (i == staticData.length-1){
+                                            var markcircle = d3.select(this).select("circle")
+                                                .attr("r", 0)
+                                            var valuetext = d3.select(this).select(".valuetext")
+                                                .style("display", "block")
+                                                .text("NaN")
+                                        }
+                                    }
+                                    
+                                    return 0
+                                })
+                        }
+
+
+
+                    }
+                })
+            }
+
+            function drawStaticMobile(){
+                var staticidArray = [1,4,6,9,11,12,13,14,15]
+                for(var i = 0; i < staticidArray.length; i++){
+                    drawStatic(staticidArray[i])
+                }
+            }
+            
+
+        </script>
+    </body>
+</html>
