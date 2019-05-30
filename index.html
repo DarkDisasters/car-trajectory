@@ -25,7 +25,11 @@
             sensor id to delete <input type = "text" name="delmobileid"></input>
             <button type="button" onclick = "delTrack()">Delete</button>
             <br>
+            Static sensor id to add <input type = "text" name="addstaticid"></input>
+            <button type="button" onclick = "addStatic()">Add Static</button>
+            <br>
             <button type="button" onclick = "drawStaticMobile()">Add all static track</button>
+            <button type="button" onclick = "drawAllMobile()">Add all mobile track</button>
             <button type="button" onclick = "clearall()">Clear all track</button>
         </div>
 
@@ -73,6 +77,7 @@
 
             var addmobile_id = ""
             var delmobile_id = ""
+            var addstatic_id = ""
 
             function light(sensorid){
                 
@@ -107,6 +112,12 @@
                         .style("fill", function(){
                             return "#F27219"
                         })
+            }
+
+            function addStatic(){
+                addstatic_id = $('input[name="addstaticid"]').val()
+                drawStatic(addstatic_id)
+                console.log('add', addmobile_id)
             }
 
             function addTrack(){
@@ -159,6 +170,24 @@
                 var staticidArray = [1,4,6,9,11,12,13,14,15]
                 for(var i = 0; i < staticidArray.length; i++){
                     drawStatic(staticidArray[i])
+                }
+            }
+
+            function drawAllMobile(){
+                for(var i = 0; i < 50; i++){
+                    drawTrack(i+1)
+                    addmobile_id = i + 1
+                    var colornow = colorscale(parseInt(addmobile_id))
+                    var lightcolor = "#EDE327"
+                    var button = document.createElement("input")
+                    button.id = "Track"+String(addmobile_id)
+                    button.type = "button"
+                    button.value = addmobile_id
+                    button.style = 'width:70px;background-color:' + colornow
+                    button.setAttribute("onmouseover", 'light('+addmobile_id+')')
+                    button.setAttribute("onmouseout", 'recover('+addmobile_id+')')
+                    var mm = document.getElementById("liTrack")
+                    mm.appendChild(button)
                 }
             }
 
@@ -264,8 +293,10 @@
                                         var valuetext = d3.select(this).select(".valuetext")
                                             .style("display", "none")
                                             .text(animateData[j]['Value'])
+                                        liAnimation[i]["data"].splice(0,j+1)
                                         break
                                     }        
+
                                     if (j == animateData.length-1){
                                         var markcircle = d3.select(this).select("circle")
                                             .attr("r", 0)
@@ -274,6 +305,7 @@
                                             .text("NaN")
                                     }
                                 }
+
                                 return 0
                             })
 
@@ -307,6 +339,7 @@
                                             })
                                             .attr("y",  function(){return animateData[j]['lonplat']['y'] - 37})
                                             .text(animateData[j]['Value'])
+                                        liAnimation[i]["data"].splice(0,j+1)
                                         break;
                                     }
                                     if (j == animateData.length-1){
@@ -339,7 +372,7 @@
                     liAnimation.push(animationdict)
                     console.log("flag1flag1")
                     var interval = setInterval(function(){
-                        second += 5
+                        second += 20
                         if(second == 60){
                             minute += 1
                             second = 0
@@ -380,81 +413,6 @@
                         var sensorData = []
                         addElement(data, sensorData, sensorid, "mobile")
                         getTimeandAnimate("mobile", sensorid, sensorData)
-                        // var flag = 0
-                        // var interval = setInterval(function(sensorid){
-
-                        //     if(count == 0){
-                        //         flag = 1
-                        //         count ++
-                        //     }
-                        //     if(flag == 1){
-                        //         second += 5
-                        //         if(second == 60){
-                        //             minute += 1
-                        //             second = 0
-                        //         }
-                        //         if(minute == 60){
-                        //             hour += 1
-                        //             minute = 0
-                        //         }
-                        //         if(hour == 24){
-                        //             day += 1
-                        //             hour = 0
-                        //         }
-                                
-                        //         var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
-                        //     }
-                        //     else if(flag == 0){
-                        //         var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
-                        //     }
-                        //     transition(timeNow)
-                        //     if(day == 11 && hour == 0 && minute == 0 && second == 0){
-                        //         clearInterval(interval)
-                        //     }
-                        // }, 0.001)
-
-                        // function transition(timestamp) {
-                        //     d3.select("body")
-                        //         .select(".mobileMark"+ String(sensorid))
-                        //         .attr("start", function(){
-                        //             var that = d3.select(this) 
-                        //             for (var i = 0; i < sensorData.length; i++){
-                        //                 if(timestamp == sensorData[i]['Timestamp']){
-                        //                     var markcircle = d3.select(this).select("circle")
-                        //                         .attr("r", radiusscale(sensorData[i]['Value']))
-                        //                         .attr("transform", function(){
-                        //                             x = sensorData[i]['lonplat']['x']
-                        //                             y = sensorData[i]['lonplat']['y']
-                        //                             return "translate(" + x + ',' + y + ")"
-                        //                         })
-                        //                     var timetext = d3.select(this).select(".timetext")
-                        //                         .attr("x",  function(){ 
-                        //                             return sensorData[i]['lonplat']['x'] - 5
-                        //                         })
-                        //                         .attr("y",  function(){return sensorData[i]['lonplat']['y'] - 17})
-                        //                         .text(timestamp)
-                        //                     var valuetext = d3.select(this).select(".valuetext")
-                        //                         .style("display", "none")
-                        //                         .attr("x",  function(){ 
-                        //                             return sensorData[i]['lonplat']['x'] - 5
-                        //                         })
-                        //                         .attr("y",  function(){return sensorData[i]['lonplat']['y'] - 37})
-                        //                         .text(sensorData[i]['Value'])
-                        //                     break;
-                        //                 }
-                        //                 if (i == sensorData.length-1){
-                        //                     var markcircle = d3.select(this).select("circle")
-                        //                         .attr("r", 0)
-                        //                     var valuetext = d3.select(this).select(".valuetext")
-                        //                         .style("display", "block")
-                        //                         .text("NaN")
-                        //                 }
-                        //             }
-                                    
-                        //             return 0
-                        //         })
-                        // }
-
                     }
                 })
             }
@@ -468,68 +426,7 @@
                         var sensorData = []
                         addElement(data, sensorData, sensorid, "static")
                         getTimeandAnimate("static", sensorid, sensorData)
-                        // var interval = setInterval(function(sensorid){
-
-                        //     if(count == 0){
-                        //         flag = 1
-                        //         count ++
-                        //     }
-                        //     if(flag == 1){
-                        //         second += 5
-                        //         if(second == 60){
-                        //             minute += 1
-                        //             second = 0
-                        //         }
-                        //         if(minute == 60){
-                        //             hour += 1
-                        //             minute = 0
-                        //         }
-                        //         if(hour == 24){
-                        //             day += 1
-                        //             hour = 0
-                        //         }
-                                
-                        //         var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
-                        //     }
-                        //     else if(flag == 0){
-                        //         var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
-                        //     }
-                        //     staticTransition(timeNow)
-                        //     if(day == 11 && hour == 0 && minute == 0 && second == 0){
-                        //         clearInterval(interval)
-                        //     }
-                        // }, 0.001)
-
-                        // function staticTransition(timestamp) {
-                        //     d3.select("body")
-                        //         .select(".staticMark"+ String(sensorid))
-                        //         .attr("start", function(){
-                        //             var that = d3.select(this) 
-                        //             for (var i = 0; i < sensorData.length; i++){
-                        //                 if(timestamp == sensorData[i]['Timestamp']){
-                        //                     var markcircle = d3.select(this).select("circle")
-                        //                         .attr("r", radiusscale(sensorData[i]['Value']))
-
-                        //                     var timetext = d3.select(this).select(".timetext")
-                        //                         .text(timestamp)
-                        //                     var valuetext = d3.select(this).select(".valuetext")
-                        //                         .style("display", "none")
-                        //                         .text(sensorData[i]['Value'])
-                        //                     break
-                        //                 }        
-                        //                 if (i == sensorData.length-1){
-                        //                     var markcircle = d3.select(this).select("circle")
-                        //                         .attr("r", 0)
-                        //                     var valuetext = d3.select(this).select(".valuetext")
-                        //                         .style("display", "block")
-                        //                         .text("NaN")
-                        //                 }
-                        //             }
-                                    
-                        //             return 0
-                        //         })
-                        // }
-
+                        
                     }
                 })
             }
