@@ -4,7 +4,9 @@
         <meta charset="utf-8">
         <style>
             #mapimg{position:absolute; float:left;left:0px; top:0px; z-index: -1;}
-            svg{position:absolute; left:0px; top:0px;}
+            svg #trajectory{position:absolute; left:0px; top:0px;}
+            svg #timeNow{position:absolute; left:910px; top:0px;}
+            /*#time1{position:absolute; left:910px; top:300px; float:left;}*/
             #controlplane{position:absolute; left:1095px; top:0px; float:left; padding-top: 30px; font-size:15px;}
             #liTrack{position:absolute; left:1095px; top:300px; float:left; padding-top: 30px; font-size:15px;}
         </style>
@@ -16,8 +18,12 @@
         <div id = 'mapimg' width = "995" height = '823'>
             <img src="./StHimarkMapBlank.png" ></img>
         </div>
-        <svg id = "trajectory" width = '995' height='823'>
+        <svg id = "trajectory" width = '995' height='823'></svg>
+        <!-- <div id = "time1" width = "100" height="100"> -->
+        <svg id = "timeNow" width = "300" height="100"></svg>
+        <!-- </div> -->
         
+
         <div id = "controlplane" width= "800" height='200'>
             sensor id to add <input type = "text" name="addmobileid"></input>
             <button type="button" onclick = "addTrack()">Add</button>
@@ -32,6 +38,8 @@
             <button type="button" onclick = "drawAllMobile()">Add all mobile track</button>
             <button type="button" onclick = "clearall()">Clear all track</button>
         </div>
+        
+        
 
         <div id = "liTrack" width= "800" height='200'>
             
@@ -40,6 +48,10 @@
         <script>
             var staticid = []
             var svg = d3.select("#trajectory")
+
+            var timeNowSvg = d3.select("body")
+                .select("#timeNow")
+
 
             var lineFunction = d3.line()
                     .x(function(d){ return d['lonplat'].x;})
@@ -238,6 +250,7 @@
                         .style('fill', '#F27219')
                         .style('font-size', '12px')
                         .style('font-weight', 'bold')
+                        .style("display", "none")
                         .text(sensorData[0]['Timestamp']);
 
                 var valuetext = mark.append('text')
@@ -256,12 +269,21 @@
                         .attr('x', sensorData[0]['lonplat']['x'] + 5)
                         .attr('y', sensorData[0]['lonplat']['y'] + 10)
                         .style('fill', '#F27219')
-                        // .style('font-size', '24px')
+                        // .style('font-size', '12px')
                         .style('font-weight', 'bold')
-                        .text(String(sensorid));
+                        .text("S"+String(sensorid));
 
                 }
                 else if(mobiletype == "mobile"){
+                    var idtext = mark.append('text')
+                        .attr("class", "idtext")
+                        .attr('x', sensorData[0]['lonplat']['x'] + 5)
+                        .attr('y', sensorData[0]['lonplat']['y'] + 10)
+                        .style('fill', '#F27219')
+                        .style('font-size', '12px')
+                        // .style('font-weight', 'bold')
+                        .text("M"+String(sensorid));
+
                     var linepath = g.append("path")
                         .attr("d", lineFunction(sensorData))
                         .attr("valueset", valueset)
@@ -276,6 +298,10 @@
             }
 
             function animation(timestamp){
+
+                timeNowSvg.select(".timenowtext")
+                    .text(timestamp)
+
                 for (var i = 0; i < liAnimation.length; i++){
                     if(liAnimation[i]["type"] == "static"){
                         d3.select("body")
@@ -332,6 +358,12 @@
                                             })
                                             .attr("y",  function(){return animateData[j]['lonplat']['y'] - 17})
                                             .text(timestamp)
+                                        var idtext = d3.select(this).select(".idtext")
+                                            .attr("x",  function(){ 
+                                                return animateData[j]['lonplat']['x'] + 5
+                                            })
+                                            .attr("y",  function(){return animateData[j]['lonplat']['y'] + 10})
+                                            
                                         var valuetext = d3.select(this).select(".valuetext")
                                             .style("display", "none")
                                             .attr("x",  function(){ 
@@ -370,9 +402,20 @@
                     animationdict["id"] = sensorid
                     animationdict["data"] = sensorData
                     liAnimation.push(animationdict)
+
+                    var timeNowtext = timeNowSvg.append('text')
+                        .attr("class", "timenowtext")
+                        .style('fill', '#F27219')
+                        .attr('x', 25)
+                        .attr('y', 25)
+                        .style('font-size', '16px')
+                        .style('font-weight', 'bold')
+                        .text(sensorData[0]['Timestamp']);
+
+
                     console.log("flag1flag1")
                     var interval = setInterval(function(){
-                        second += 20
+                        second += 15
                         if(second == 60){
                             minute += 1
                             second = 0
