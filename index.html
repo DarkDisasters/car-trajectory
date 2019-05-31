@@ -34,9 +34,13 @@
             Static sensor id to add <input type = "text" name="addstaticid"></input>
             <button type="button" onclick = "addStatic()">Add Static</button>
             <br>
+            <input type="range" name="speed" id="speed" value="2" min="1" max="6" data-highlight="true"></input>
+            <br>
             <button type="button" onclick = "drawStaticMobile()">Add all static track</button>
             <button type="button" onclick = "drawAllMobile()">Add all mobile track</button>
             <button type="button" onclick = "clearall()">Clear all track</button>
+            <br>
+            <button type="button" onclick = "pauseorstart()">Pause/Start</button>
         </div>
         
         
@@ -80,8 +84,11 @@
             var minute = 0
             var second = 0
             var timenow = ""
+            var speedRange = $('input[name = "speed"]').val()
+            var intervaltime = 1
 
             var count = 0
+            var countPause = 0
 
             var numset = []
             var nameset = []
@@ -176,6 +183,23 @@
                 }
 
 
+            }
+
+            function pauseorstart(){
+
+                console.log("speed", speedRange)
+
+                if(countPause == 0){
+                    clearInterval(interval)
+                    count = 0 
+                    countPause = 1
+                }
+                else{
+                    sensorid = -1
+                    countPause = 0
+                    getTimeandAnimate("nontype",sensorid)
+                }
+                
             }
 
             function drawStaticMobile(){
@@ -397,25 +421,45 @@
                     count ++
                 }
                 if(flag == 1){
-                    var animationdict = {}
-                    animationdict["type"] = type
-                    animationdict["id"] = sensorid
-                    animationdict["data"] = sensorData
-                    liAnimation.push(animationdict)
+                    if (sensorid != -1){
+                        var animationdict = {}
+                        animationdict["type"] = type
+                        animationdict["id"] = sensorid
+                        animationdict["data"] = sensorData
+                        liAnimation.push(animationdict)
+                    
+                        var timeNowtext = timeNowSvg.append('text')
+                            .attr("class", "timenowtext")
+                            .style('fill', '#F27219')
+                            .attr('x', 25)
+                            .attr('y', 25)
+                            .style('font-size', '16px')
+                            .style('font-weight', 'bold')
+                            .text(sensorData[0]['Timestamp']);
 
-                    var timeNowtext = timeNowSvg.append('text')
-                        .attr("class", "timenowtext")
-                        .style('fill', '#F27219')
-                        .attr('x', 25)
-                        .attr('y', 25)
-                        .style('font-size', '16px')
-                        .style('font-weight', 'bold')
-                        .text(sensorData[0]['Timestamp']);
+                    }
 
+                    
 
                     console.log("flag1flag1")
-                    var interval = setInterval(function(){
-                        second += 15
+                    interval = setInterval(function(){
+                        
+                        speedRange = $('input[name = "speed"]').val()
+                        if(speedRange == 2){
+                            second += 5
+                            intervaltime = 10
+                        }
+                        else if (speedRange == 1){
+                            second += 5
+                            intervaltime = 100
+                        }
+                        else{
+                            second += 5*(speedRange-2)
+                            intervaltime = 1
+                        }
+                        
+                        console.log("second", speedRange)
+                        // console.log("time", intervaltime)
                         if(second == 60){
                             minute += 1
                             second = 0
@@ -428,13 +472,13 @@
                             day += 1
                             hour = 0
                         }
-                        var timeNow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
+                        timenow = "2020-04-"+ transfer(day) + " " + transfer(hour) + ":" + transfer(minute) + ":" + transfer(second)
 
-                        animation(timeNow)
+                        animation(timenow)
                         if(day == 11 && hour == 0 && minute == 0 && second == 0){
                             clearInterval(interval)
                         }
-                    },1)
+                    },intervaltime)
                     
                     
                 }
