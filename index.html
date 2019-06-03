@@ -16,7 +16,8 @@
     </head>
     <body>
         <div id = 'mapimg' width = "995" height = '823'>
-            <img src="./StHimarkMapBlank.png" ></img>
+            <!-- <img src="./StHimarkMapBlank.png" ></img> -->
+            <img src="StHimarkNeighborhoodMapNoLabels.png" alt="">
         </div>
         <svg id = "trajectory" width = '995' height='823'></svg>
         <!-- <div id = "time1" width = "100" height="100"> -->
@@ -51,6 +52,7 @@
 
         <script>
             var staticid = []
+            var interval
             var svg = d3.select("#trajectory")
 
             var timeNowSvg = d3.select("body")
