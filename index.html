@@ -8,7 +8,8 @@
             svg #timeNow{position:absolute; left:910px; top:0px;}
             /*#time1{position:absolute; left:910px; top:300px; float:left;}*/
             #controlplane{position:absolute; left:1095px; top:0px; float:left; padding-top: 30px; font-size:15px;}
-            #liTrack{position:absolute; left:1095px; top:300px; float:left; padding-top: 30px; font-size:15px;}
+            #liTrack{position:absolute; left:1095px; top:200px; float:left; padding-top: 30px; font-size:15px;}
+            #areaPresent{position:absolute; left:1095px; top:400px; float:left;padding-top: 30px; font-size:15px;}
         </style>
 
         <script src = "./lib/d3.js"></script>
@@ -35,7 +36,7 @@
             Static sensor id to add <input type = "text" name="addstaticid"></input>
             <button type="button" onclick = "addStatic()">Add Static</button>
             <br>
-            <input type="range" name="speed" id="speed" value="2" min="1" max="6" data-highlight="true"></input>
+            <input type="range" name="speed" id="speed" value="5" min="1" max="6" data-highlight="true"></input>
             <br>
             <button type="button" onclick = "drawStaticMobile()">Add all static track</button>
             <button type="button" onclick = "drawAllMobile()">Add all mobile track</button>
@@ -46,8 +47,12 @@
         
         
 
-        <div id = "liTrack" width= "800" height='200'>
-            
+        <div id = "liTrack" width= "800" height='200'></div>
+
+        <div id = "areaPresent" width="800" height='300'>
+            <button type = "button" onclick = "transferRange()">Transfer</button>
+            </br>
+            <input type="range" name="timerange" id = "timerange" value="0" min="0" max="86400"></input>
         </div>
 
         <script>
@@ -95,6 +100,7 @@
             var numset = []
             var nameset = []
             var liAnimation = []
+            var sensorLineData = []
 
             var addmobile_id = ""
             var delmobile_id = ""
@@ -239,6 +245,10 @@
             }
 
 
+            function transferRange(){
+                
+            }
+
             function addElement(data, sensorData, sensorid, mobiletype){
 
                 
@@ -257,7 +267,7 @@
                     datadict['lonplat'] = lonplat
                     sensorData.push(datadict)
                 }
-
+                console.log("sensordata", sensorData)
                 var g = svg.append("g")
                         .attr("class", mobiletype +"Path"+String(sensorid))
 
@@ -310,15 +320,42 @@
                         // .style('font-weight', 'bold')
                         .text("M"+String(sensorid));
 
-                    var linepath = g.append("path")
-                        .attr("d", lineFunction(sensorData))
-                        .attr("valueset", valueset)
-                        .attr("timeset", timeset)
+                    var linepath = mark.append("path")
+                        .attr("d", function(){
+                            var sevenStart=eightStart=nineStart=tenStart = 0
+                            var sensorPathSix = sensorPathSeven = sensorPathEight = sensorPathNine = sensorPathTen = []
+                            for (var i = 0; i < sensorData.length; i++){
+                                var nowDay = parseInt(sensorData[i]['Timestamp'].slice(8,10))
+                                if (nowDay <= 6){
+                                    sensorPathSix = sensorData.slice(0,i+1)
+                                    sevenStart = i+1
+                                }
+                                else if (nowDay>=7 && nowDay<8){
+                                    sensorPathSeven = sensorData.slice(sevenStart,i+1)
+                                    eightStart = i+1
+                                }
+                                else if (nowDay>=8 && nowDay<9){
+                                    sensorPathEight = sensorData.slice(eightStart,i+1)
+                                    nineStart = i+1
+                                }
+                                else if (nowDay>=9 && nowDay<10){
+                                    sensorPathNine = sensorData.slice(nineStart,i+1)
+                                    tenStart = i+1
+                                }
+                                else{
+                                    sensorPathTen = sensorData.slice(tenStart,sensorData.length)
+                                    break
+                                }
+                            }
+                            sensorLineData.push(sensorPathSix, sensorPathSeven, sensorPathEight, sensorPathNine, sensorPathTen)
+                            // console.log("linedata", sensorLineData)
+                            return lineFunction(sensorLineData[0])
+                        })
                         .style('stroke', function(){
                             return colorscale(parseInt(sensorid))
                         })
                         .attr("stroke-width", 1.8)
-                        .style("display","none")
+                        // .style("display","none")
                         .style("fill", "none")
                 }
             }
@@ -367,6 +404,27 @@
                             .select(".mobileMark"+ String(liAnimation[i]["id"]))
                             .attr("start", function(){
                                 var that = d3.select(this) 
+                                var animateLineData = []
+                                var nowDay = parseInt(timestamp.slice(8,10))
+                                if (nowDay <= 6){
+                                    animateLineData = sensorLineData[0]
+                                }
+                                else if (nowDay>=7 && nowDay<8){
+                                    animateLineData = sensorLineData[1]
+                                }
+                                else if (nowDay>=8 && nowDay<9){
+                                    animateLineData = sensorLineData[2]
+                                }
+                                else if (nowDay>=9 && nowDay<10){
+                                    animateLineData = sensorLineData[3]
+                                }
+                                else{
+                                    animateLineData = sensorLineData[4]
+                                }
+                                var linenow = d3.select(this).select("path")
+                                    .attr("d", function(){
+                                        return lineFunction(animateLineData)
+                                })
                                 for (var j = 0; j < liAnimation[i]["data"].length; j++){
                                     var animateData = liAnimation[i]["data"]
                                     if(timestamp == animateData[j]['Timestamp']){
@@ -378,6 +436,8 @@
                                                 y = animateData[j]['lonplat']['y']
                                                 return "translate(" + x + ',' + y + ")"
                                             })
+
+                                        
                                         var timetext = d3.select(this).select(".timetext")
                                             .attr("x",  function(){ 
                                                 return animateData[j]['lonplat']['x'] - 5
