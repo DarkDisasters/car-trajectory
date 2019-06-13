@@ -49,10 +49,13 @@
 
         <div id = "liTrack" width= "800" height='200'></div>
 
-        <div id = "areaPresent" width="800" height='300'>
+        <div id = "areaPresent" width="900" height='300'>
             <button type = "button" onclick = "transferRange()">Transfer</button>
             </br>
-            <input type="range" name="timerange" id = "timerange" value="0" min="0" max="86400"></input>
+            <span class="HintLabel">当前时刻：</span>
+            <input id = "time" type="text" name="time"></input>
+            </br>
+            <input type="range" name="timerange" id = "timerange" step = "1" value="0" min="0" max="86400" style="width:900px"></input>
         </div>
         
         <script>

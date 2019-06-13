@@ -1,4 +1,29 @@
 function transferRange(){
+
+    var Mode = 0
+    var Down = 0
+
+    var slider = d3.select("#timerange")
+        .on("mousedown", function(){
+            Down = 1
+        })
+        .on("mouseup", function(){
+            Down = 0
+        })
+        .on("mousemove", function(){
+            var timeNumber = $("#timerange").val()
+            var time_day = Math.floor(timeNumber / 17280)
+            var time_hour = Math.floor((timeNumber-time_day*17280) / 720)
+            var time_minute = Math.floor((timeNumber-time_day*17280-time_hour*720) / 12)
+            var time_second = timeNumber-time_day*17280-time_hour*720-time_minute*12
+
+            console.log("timenow", "2010-04-"+transfer(time_day+6)+ " " + transfer(time_hour) + ":" + transfer(time_minute) + ":" + transfer(time_second))
+            if(Mode == 0 && Down == 1){
+                if(time_minute)
+                $('#time').val("2010-04-"+transfer(time_day+6)+ " " + transfer(time_hour) + ":" + transfer(time_minute) + ":" + transfer(time_second))
+            }
+        })
+
     d3.csv('../csvdata/mobile/mobileSensor.csv', function(error,data){
         if(error){
             console.log(error)
@@ -99,16 +124,6 @@ function transferRange(){
                     .attr("transform", "translate(" + areaDotList[j]['lonplat']['x'] + ',' + areaDotList[j]['lonplat']['y'] + ")")
                     .style("fill", "#F27219")
             }
-            // for (var i = 0; i < 200; i++){
-            //     for (var j = 0; j < 200; j++){
-            //          if(j == 199){
-
-            //          }
-            //          else{
-                        
-            //          }
-            //     }
-            // }
         }
     })
 }
